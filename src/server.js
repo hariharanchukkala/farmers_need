@@ -2,14 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const path = require('path');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // --- Simple in-memory ads and content data ---
 const ADS = [
@@ -33,6 +36,9 @@ const ADS = [
 
 // Simple in-memory storage for ad/branding requests (for production use a DB)
 const AD_REQUESTS = [];
+
+// Simple in-memory storage for worker requests
+const WORKER_REQUESTS = [];
 
 // Simple in-memory discussion data (for production use a DB)
 const DISCUSSION_POSTS = [];
@@ -624,6 +630,56 @@ app.post('/api/ads/request', (req, res) => {
       'మీ బ్రాండింగ్ / ప్రకటన అభ్యర్థన నమోదు అయింది. త్వరలో మా టీమ్ మీకు కాల్ చేస్తుంది.',
     request
   });
+});
+
+// Worker request: submit
+app.post('/api/workers/request', (req, res) => {
+  const {
+    farmerName,
+    phone,
+    district,
+    mandal,
+    village,
+    workType,
+    workersNeeded,
+    landSizeAcres,
+    preferredDate,
+    notes
+  } = req.body || {};
+
+  if (!phone || !workType) {
+    return res.status(400).json({ error: 'phone and workType are required' });
+  }
+
+  const request = {
+    id: `WR-${Date.now()}`,
+    farmerName: farmerName || null,
+    phone,
+    location: { district: district || null, mandal: mandal || null, village: village || null },
+    workType,
+    workersNeeded: Number(workersNeeded) || 1,
+    landSizeAcres: Number(landSizeAcres) || null,
+    preferredDate: preferredDate || null,
+    notes: notes || null,
+    createdAt: new Date().toISOString(),
+    status: 'open'
+  };
+
+  WORKER_REQUESTS.push(request);
+  res.json({
+    messageTe:
+      'మీ కూలీల అభ్యర్థన నమోదు అయింది. అందుబాటులో ఉన్న కూలీలకు సమాచారం పంపుతాం.',
+    request
+  });
+});
+
+// Worker request: list
+app.get('/api/workers/requests', (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+  const requests = [...WORKER_REQUESTS]
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, limit);
+  res.json({ requests });
 });
 
 // Aanadatha-style content endpoint
