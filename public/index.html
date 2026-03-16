@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="te">
+  <head>
+    <meta charset="UTF-8" />
+    <title>తెలుగు రైతు సహాయకుడు</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Leaflet map CSS (no SRI to avoid blocking) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        background: #f4f7fb;
+        color: #111827;
+      }
+      header {
+        background: linear-gradient(135deg, #047857, #16a34a);
+        color: #ecfdf5;
+        padding: 16px 20px;
+        text-align: center;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 1.6rem;
+      }
+      header p {
+        margin: 4px 0 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+      main {
+        max-width: 1000px;
+        margin: 16px auto 40px;
+        padding: 0 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr);
+        gap: 16px;
+      }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        padding: 16px 16px 18px;
+        margin-bottom: 14px;
+      }
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 1.1rem;
+        color: #0f172a;
+      }
+      .card h3 {
+        margin: 8px 0;
+        font-size: 1rem;
+        color: #111827;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+        color: #4b5563;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 7px 9px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 0.85rem;
+        box-sizing: border-box;
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #16a34a;
+        box-shadow: 0 0 0 1px #bbf7d0;
+      }
+      .field {
+        margin-bottom: 8px;
+      }
+      button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        padding: 7px 16px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: #16a34a;
+        color: #ecfdf5;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+      }
+      button.secondary {
+        background: #0ea5e9;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+        box-shadow: none;
+      }
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+      }
+      .result-block {
+        font-size: 0.82rem;
+        line-height: 1.4;
+        margin-top: 8px;
+      }
+      .result-block pre {
+        background: #0b1120;
+        color: #e5e7eb;
+        padding: 8px 10px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 0.75rem;
+      }
+      .json-view {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+          monospace;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        background: #0b1120;
+        color: #e5e7eb;
+        padding: 10px 10px;
+        border-radius: 10px;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .json-key {
+        color: #93c5fd;
+      }
+      .json-string {
+        color: #a7f3d0;
+      }
+      .json-number {
+        color: #fde68a;
+      }
+      .json-boolean {
+        color: #fca5a5;
+      }
+      .json-null {
+        color: #cbd5e1;
+      }
+      .recommend-item {
+        border-radius: 8px;
+        padding: 9px 10px;
+        margin-bottom: 6px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+      }
+      .recommend-item strong {
+        color: #065f46;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 1px 6px;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        margin-right: 4px;
+        margin-top: 2px;
+      }
+      .ads-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .ad-card {
+        border-radius: 10px;
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        padding: 10px 10px 11px;
+        font-size: 0.8rem;
+      }
+      .ad-card h4 {
+        margin: 0 0 4px;
+        font-size: 0.9rem;
+        color: #14532d;
+      }
+      .ad-card a {
+        color: #0ea5e9;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.78rem;
+      }
+      .content-list {
+        margin-top: 8px;
+        font-size: 0.8rem;
+      }
+      .content-item {
+        padding: 7px 0;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .content-item:last-child {
+        border-bottom: none;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 0.75rem;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #0369a1;
+        margin-left: 4px;
+      }
+      .status {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+      .map-container {
+        margin-top: 8px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #d1d5db;
+      }
+      #map {
+        width: 100%;
+        height: 220px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>తెలుగు రైతు సహాయకుడు</h1>
+      <p>భూమి వివరాలు, వాతావరణం ఆధారంగా పంట సూచన &amp; లాభ లెక్కలు</p>
+    </header>
+    <main>
+      <div class="grid">
+        <!-- LEFT: Forms & actions -->
+        <section>
+          <div class="card">
+            <h2>భూమి వివరాలు</h2>
+            <div class="field">
+              <label>జిల్లా</label>
+              <input id="district" placeholder="ఉదా: గుంటూరు" />
+            </div>
+            <div class="field">
+              <label>మండలం</label>
+              <input id="mandal" placeholder="ఉదా: తెనాలి" />
+            </div>
+            <div class="field">
+              <label>గ్రామం</label>
+              <input id="village" placeholder="గ్రామం పేరు" />
+            </div>
+            <div class="field">
+              <label>భూమి విస్తీర్ణం (ఎకరాలు)</label>
+              <input id="landSizeAcres" type="number" min="0.1" step="0.1" value="1" />
+            </div>
+            <div class="field">
+              <label>సీజన్</label>
+              <select id="season">
+                <option value="kharif">ఖరీఫ్ (Kharif)</option>
+                <option value="rabi">రబీ (Rabi)</option>
+                <option value="other">ఇతర / సంవత్సరం మొత్తం</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>నేల రకం (ఇంగ్లీష్ లో సింపుల్ గా రాయండి)</label>
+              <input id="soilType" placeholder="black / red / sandy..." />
+            </div>
+            <div class="field">
+              <label>నీటి విధానం (irrigation)</label>
+              <input id="irrigationType" placeholder="borewell / canal / rainfed..." />
+            </div>
+            <div class="field">
+              <label>స్థానం (lat, lon) – వాతావరణం కోసం (ఐచ్చికం)</label>
+              <div style="display: flex; gap: 6px">
+                <input id="lat" type="number" step="0.000001" placeholder="అక్షాంశం (lat)" />
+                <input id="lon" type="number" step="0.000001" placeholder="రేఖాంశం (lon)" />
+              </div>
+              <div class="status" id="geoStatus"></div>
+              <div class="map-container">
+                <div id="map"></div>
+              </div>
+              <div class="status">
+                మ్యాప్ పై ఎక్కడైనా టచ్ / క్లిక్ చేస్తే అక్కడి స్థానం ఆధారంగా జిల్లా, మండలం, గ్రామం
+                ఆటోమేటిక్ గా తీసుకుంటాం.
+              </div>
+            </div>
+            <div class="button-row">
+              <button id="btnRecommend">పంట సూచనలు &amp; లాభం చూడండి</button>
+              <button type="button" class="secondary" id="btnUseLocation">
+                🌐 ఆటో లొకేషన్
+              </button>
+            </div>
+            <div class="status" id="recommendStatus"></div>
+            <div class="result-block" id="recommendResult"></div>
+          </div>
+
+          <div class="card">
+            <h2>వాతావరణం సెక్షన్</h2>
+            <p class="muted">
+              పై స్థానం (lat, lon) ఆధారంగా ప్రస్తుత వాతావరణం మరియు వచ్చే రోజుల అంచనాలు ఇక్కడ కనిపిస్తాయి.
+            </p>
+            <div class="button-row">
+              <button id="btnWeather" type="button" class="secondary">వాతావరణం చూడండి</button>
+            </div>
+            <div class="status" id="weatherStatus"></div>
+            <div class="result-block" id="weatherResult"></div>
+          </div>
+
+          <div class="card">
+            <h2>డ్రోన్ బుకింగ్</h2>
+            <p class="muted">
+              ఎకరాల సంఖ్య, పంట, తేదీ ఇవ్వండి. ఆంధ్రటాక్సీ / ఇతర ప్రొవైడర్ ద్వారా బుకింగ్ అభ్యర్థన వెళుతుంది.
+            </p>
+            <div class="field">
+              <label>రైతు పేరు</label>
+              <input id="farmerName" placeholder="పేరు" />
+            </div>
+            <div class="field">
+              <label>ఫోన్ నంబర్</label>
+              <input id="phone" placeholder="10 అంకెల మొబైల్ నంబర్" />
+            </div>
+            <div class="field">
+              <label>పంట</label>
+              <input id="droneCrop" placeholder="ఉదా: paddy, cotton..." />
+            </div>
+            <div class="field">
+              <label>డ్రోన్ సేవ తేదీ (YYYY-MM-DD)</label>
+              <input id="preferredDate" placeholder="2026-03-20" />
+            </div>
+            <div class="button-row">
+              <button id="btnDroneBook">డ్రోన్ బుక్ చేయండి</button>
+            </div>
+            <div class="status" id="droneStatus"></div>
+            <div class="result-block" id="droneResult"></div>
+          </div>
+        </section>
+
+        <!-- RIGHT: Ads, content & raw JSON -->
+        <aside>
+          <div class="card">
+            <h2>వ్యవసాయ ప్రకటనలు</h2>
+            <div class="ads-grid" id="adsContainer">
+              <p class="muted">లొడ్ అవుతోంది...</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              ఆనాదాతా మూల
+              <span class="badge">వ్యాసాలు</span>
+            </h2>
+            <div class="content-list" id="contentContainer">
+              <p class="muted">లొడ్ అవుతోంది...</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>రైతుల చర్చా ప్యానెల్</h2>
+            <p class="muted">
+              మీ సమస్యను పోస్ట్ చేయండి. ఇతర రైతులు/నిపుణులు సమాధానం ఇస్తారు.
+            </p>
+
+            <div class="field">
+              <label>మీ పేరు</label>
+              <input id="discussName" placeholder="పేరు" />
+            </div>
+            <div class="field">
+              <label>ఫోన్ (ఐచ్చికం)</label>
+              <input id="discussPhone" placeholder="మొబైల్" />
+            </div>
+            <div class="field">
+              <label>సమస్య శీర్షిక (ఐచ్చికం)</label>
+              <input id="discussTitleTe" placeholder="ఉదా: వరి లో పురుగు సమస్య" />
+            </div>
+            <div class="field">
+              <label>మీ సమస్య వివరించండి *</label>
+              <input id="discussProblemTe" placeholder="చిన్నగా వివరించండి..." />
+            </div>
+            <div class="button-row">
+              <button id="btnDiscussPost" class="secondary">సమస్య పోస్ట్ చేయండి</button>
+              <button id="btnDiscussRefresh" type="button">రిఫ్రెష్</button>
+            </div>
+            <div class="status" id="discussStatus"></div>
+
+            <div class="result-block" id="discussList"></div>
+          </div>
+
+          <div class="card">
+            <h2>బ్రాండింగ్ / ప్రకటన పోర్టల్</h2>
+            <p class="muted">
+              మీ ఉత్పత్తి/సేవను రైతులకు చూపించాలా? ఇక్కడ వివరాలు ఇస్తే మా టీమ్ మీతో సంప్రదిస్తుంది.
+            </p>
+            <div class="field">
+              <label>బ్రాండ్ / కంపెనీ పేరు *</label>
+              <input id="adBrandName" placeholder="ఉదా: XYZ Seeds" />
+            </div>
+            <div class="field">
+              <label>కాంటాక్ట్ పేరు</label>
+              <input id="adContactName" placeholder="పేరు" />
+            </div>
+            <div class="field">
+              <label>మొబైల్ నంబర్ *</label>
+              <input id="adPhone" placeholder="10 అంకెల మొబైల్" />
+            </div>
+            <div class="field">
+              <label>టార్గెటింగ్ జిల్లా (ఐచ్చికం)</label>
+              <input id="adDistrict" placeholder="ఉదా: Krishna" />
+            </div>
+            <div class="field">
+              <label>ఉత్పత్తి శీర్షిక (తెలుగు)</label>
+              <input id="adTitleTe" placeholder="ఉదా: అధిక దిగుబడి విత్తనాలు" />
+            </div>
+            <div class="field">
+              <label>వివరణ (తెలుగు)</label>
+              <input id="adDescriptionTe" placeholder="చిన్న వివరణ..." />
+            </div>
+            <div class="field">
+              <label>CTA లింక్ (వెబ్‌సైట్/వాట్సాప్/ఫోన్)</label>
+              <input id="adCtaUrl" placeholder="ఉదా: https://example.com" />
+            </div>
+            <div class="field">
+              <label>బజెట్ (ఐచ్చికం)</label>
+              <input id="adBudget" placeholder="ఉదా: ₹5000/నెల" />
+            </div>
+            <div class="field">
+              <label>గమనికలు (ఐచ్చికం)</label>
+              <input id="adNotes" placeholder="మీరు ఏ జిల్లాల్లో చూపించాలి..." />
+            </div>
+            <div class="button-row">
+              <button id="btnAdRequest" class="secondary">అభ్యర్థన పంపండి</button>
+            </div>
+            <div class="status" id="adRequestStatus"></div>
+            <div class="result-block" id="adRequestResult"></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+      const API_BASE = 'http://localhost:4000';
+
+      const $ = (id) => document.getElementById(id);
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function syntaxHighlightJson(obj) {
+        const json = JSON.stringify(obj, null, 2) || '';
+        const escaped = escapeHtml(json);
+        return escaped.replace(
+          /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+          (match) => {
+            let cls = 'json-number';
+            if (match.startsWith('"')) {
+              cls = match.endsWith(':') ? 'json-key' : 'json-string';
+            } else if (match === 'true' || match === 'false') {
+              cls = 'json-boolean';
+            } else if (match === 'null') {
+              cls = 'json-null';
+            }
+            return `<span class="${cls}">${match}</span>`;
+          }
+        );
+      }
+
+      function setJsonDebug(obj) {
+        const el = $('debugJson');
+        if (!el) return;
+        el.innerHTML = syntaxHighlightJson(obj);
+      }
+
+      async function fetchJson(url, options) {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+          throw new Error('HTTP ' + res.status);
+        }
+        return res.json();
+      }
+
+      async function loadAds() {
+        try {
+          const data = await fetchJson(API_BASE + '/api/ads');
+          const container = $('adsContainer');
+          container.innerHTML = '';
+          if (!data.ads || !data.ads.length) {
+            container.innerHTML = '<p class="muted">ప్రస్తుతం ప్రకటనలు లేవు.</p>';
+            return;
+          }
+          data.ads.forEach((ad) => {
+            const div = document.createElement('div');
+            div.className = 'ad-card';
+            div.innerHTML = `
+              <h4>${ad.titleTe || ''}</h4>
+              <p>${ad.descriptionTe || ''}</p>
+              ${
+                ad.ctaUrl
+                  ? `<a href="${ad.ctaUrl}" target="_blank" rel="noopener noreferrer">${
+                      ad.ctaTextTe || 'మరింత తెలుసుకోండి'
+                    }</a>`
+                  : ''
+              }
+            `;
+            container.appendChild(div);
+          });
+        } catch (err) {
+          $('adsContainer').innerHTML =
+            '<p class="muted">ప్రకటనలు లోడ్ కాలేదు. తర్వాత ప్రయత్నించండి.</p>';
+        }
+      }
+
+      async function loadContent() {
+        try {
+          const data = await fetchJson(API_BASE + '/api/content');
+          const container = $('contentContainer');
+          container.innerHTML = '';
+          if (!data.items || !data.items.length) {
+            container.innerHTML = '<p class="muted">వ్యాసాలు అందుబాటులో లేవు.</p>';
+            return;
+          }
+          data.items.forEach((item) => {
+            const div = document.createElement('div');
+            div.className = 'content-item';
+            div.innerHTML = `
+              <div><strong>${item.titleTe || ''}</strong></div>
+              <div>${item.summaryTe || ''}</div>
+              <div class="muted">
+                ${item.sourceLabelTe || ''}
+                ${
+                  item.sourceUrl
+                    ? ` · <a href="${item.sourceUrl}" target="_blank" rel="noopener noreferrer">మరింత చదవండి</a>`
+                    : ''
+                }
+              </div>
+            `;
+            container.appendChild(div);
+          });
+        } catch (err) {
+          $('contentContainer').innerHTML =
+            '<p class="muted">వ్యాసాలు లోడ్ కాలేదు. తర్వాత ప్రయత్నించండి.</p>';
+        }
+      }
+
+      async function handleRecommend() {
+        $('btnRecommend').disabled = true;
+        $('recommendStatus').textContent = 'లెక్కిస్తున్నారు...';
+        $('recommendResult').innerHTML = '';
+        try {
+          const body = {
+            district: $('district').value || undefined,
+            mandal: $('mandal').value || undefined,
+            village: $('village').value || undefined,
+            landSizeAcres: Number($('landSizeAcres').value) || 1,
+            soilType: $('soilType').value || undefined,
+            irrigationType: $('irrigationType').value || undefined,
+            season: $('season').value || undefined,
+            lat: $('lat').value ? Number($('lat').value) : undefined,
+            lon: $('lon').value ? Number($('lon').value) : undefined
+          };
+
+          const data = await fetchJson(API_BASE + '/api/recommendations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          setJsonDebug(data);
+
+          const container = $('recommendResult');
+          let html = '';
+
+          if (data.teluguExplanation) {
+            html += `<div style="margin-bottom:6px;"><span class="pill">AI సూచన</span></div>`;
+            html += `<div style="background:#ecfdf5;border-radius:8px;padding:8px 9px;margin-bottom:6px;font-size:0.83rem;">${data.teluguExplanation
+              .replace(/\n/g, '<br>')
+              .trim()}</div>`;
+          }
+
+          if (data.recommendations && data.recommendations.length) {
+            html += '<h3>పంటల వివరాలు</h3>';
+            data.recommendations.forEach((rec) => {
+              html += `
+                <div class="recommend-item">
+                  <div><strong>${rec.crop}</strong></div>
+                  <div>
+                    <span class="tag">ఎకరాలు: ${rec.areaAcres}</span>
+                    <span class="tag">యీల్డ్/ఎకరం: ${rec.yieldPerAcre} క్వింటాళ్లు</span>
+                  </div>
+                  <div>
+                    <span class="tag">ధర/క్వింటాల్: ₹${rec.pricePerQuintal}</span>
+                    <span class="tag">ఎరువు &amp; ఖర్చు/ఎకరం: ₹${rec.costPerAcre}</span>
+                  </div>
+                  <div style="margin-top:3px;">
+                    మొత్తం యీల్డ్: <strong>${rec.totalYieldQuintals} క్వింటాళ్లు</strong><br/>
+                    మొత్తం ఆదాయం: <strong>₹${rec.grossIncome}</strong><br/>
+                    మొత్తం ఖర్చు: <strong>₹${rec.totalCost}</strong><br/>
+                    అంచనా నికర లాభం: <strong style="color:#15803d;">₹${rec.netProfit}</strong>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            html += '<p class="muted">పంట సూచనలు లభించలేదు.</p>';
+          }
+
+          if (data.weather) {
+            html += `<p class="muted" style="margin-top:4px;">గమనిక: వాతావరణ వివరాలు కూడా ఫలితాలలో ఉన్నాయి (పూర్తి JSON లో చూడండి).</p>`;
+          }
+
+          container.innerHTML = html;
+          $('recommendStatus').textContent = 'సూచనలు సిద్ధం అయ్యాయి.';
+        } catch (err) {
+          console.error(err);
+          $('recommendStatus').textContent =
+            'లోపం వచ్చింది. సర్వర్ నడుస్తుందా చూసుకోండి (http://localhost:4000).';
+        } finally {
+          $('btnRecommend').disabled = false;
+        }
+      }
+
+      async function handleDroneBook() {
+        $('btnDroneBook').disabled = true;
+        $('droneStatus').textContent = 'బుకింగ్ అభ్యర్థన పంపుతున్నారు...';
+        $('droneResult').innerHTML = '';
+        try {
+          const body = {
+            farmerName: $('farmerName').value || undefined,
+            phone: $('phone').value || undefined,
+            district: $('district').value || undefined,
+            mandal: $('mandal').value || undefined,
+            village: $('village').value || undefined,
+            lat: $('lat').value ? Number($('lat').value) : undefined,
+            lon: $('lon').value ? Number($('lon').value) : undefined,
+            landSizeAcres: Number($('landSizeAcres').value) || 1,
+            crop: $('droneCrop').value || undefined,
+            preferredDate: $('preferredDate').value || undefined
+          };
+
+          const data = await fetchJson(API_BASE + '/api/drone/book', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          setJsonDebug(data);
+
+          const container = $('droneResult');
+          if (data.mode === 'simulated') {
+            container.innerHTML = `
+              <p>${data.messageTe || 'బుకింగ్ నమోదు అయింది.'}</p>
+              <p class="muted">బుకింగ్ ID: ${data.booking?.id || '-'}</p>
+            `;
+          } else {
+            container.innerHTML = `
+              <p>లైవ్ ప్రొవైడర్ ద్వారా బుకింగ్ నమోదు అయింది.</p>
+              <p class="muted">ప్రొవైడర్: ${data.provider || 'తెలియదు'}</p>
+            `;
+          }
+
+          $('droneStatus').textContent = 'బుకింగ్ రిస్పాన్స్ వచ్చింది.';
+        } catch (err) {
+          console.error(err);
+          $('droneStatus').textContent =
+            'డ్రోన్ బుకింగ్ విఫలమైంది. సర్వర్ / API సెట్టింగులు చెక్ చేయండి.';
+        } finally {
+          $('btnDroneBook').disabled = false;
+        }
+      }
+
+      async function handleWeather() {
+        $('btnWeather').disabled = true;
+        $('weatherStatus').textContent = 'వాతావరణం లెక్కిస్తున్నారు...';
+        $('weatherResult').innerHTML = '';
+        try {
+          const lat = $('lat').value ? Number($('lat').value) : undefined;
+          const lon = $('lon').value ? Number($('lon').value) : undefined;
+          if (!lat || !lon) {
+            $('weatherStatus').textContent = 'ముందు స్థానం (lat, lon) సెట్ చేయండి.';
+            return;
+          }
+          const data = await fetchJson(`${API_BASE}/api/weather?lat=${lat}&lon=${lon}`);
+          const s = data.summary;
+          if (!s || !s.current) {
+            $('weatherResult').innerHTML =
+              `<p class="muted">${escapeHtml(
+                data?.messageTe || 'వాతావరణ వివరాలు లభించలేదు.'
+              )}</p>`;
+          } else {
+            let html = '';
+            const loc = data.location || {};
+            const nameParts = [loc.village, loc.mandal, loc.district].filter(Boolean);
+            const locLabel =
+              (nameParts.length ? nameParts.join(' / ') : loc.displayName) || 'మీ స్థానం';
+
+            html += `<h3>${escapeHtml(locLabel)}</h3>`;
+            html += `<p>ప్రస్తుత ఉష్ణోగ్రత: <strong>${s.current.temp ?? '-'}°C</strong> (Feels like ${
+              s.current.feelsLike ?? '-'
+            }°C)</p>`;
+            html += `<p>తేమ: <strong>${s.current.humidity ?? '-'}%</strong> · గాలి వేగం: <strong>${
+              s.current.windSpeed ?? '-'
+            } m/s</strong></p>`;
+            if (s.current.description) {
+              html += `<p>స్థితి: <strong>${escapeHtml(s.current.description)}</strong></p>`;
+            }
+
+            if (Array.isArray(s.daily) && s.daily.length) {
+              html += '<h3>వచ్చే రోజుల అంచనాలు</h3>';
+              html += '<div>';
+              s.daily.slice(0, 5).forEach((d) => {
+                const time = d.time ? escapeHtml(new Date(d.time).toLocaleDateString()) : '';
+                html += `<div class="tag">${time}: ${d.temp ?? '-'}°C, ${
+                  d.description ? escapeHtml(d.description) : ''
+                }</div>`;
+              });
+              html += '</div>';
+            }
+
+            $('weatherResult').innerHTML = html;
+          }
+          $('weatherStatus').textContent = 'వాతావరణం సిద్ధం.';
+        } catch (err) {
+          console.error(err);
+          $('weatherStatus').textContent =
+            'వాతావరణం పొందలేకపోయాం. OPENWEATHER_API_KEY సెట్ అయ్యిందా, సర్వర్ నడుస్తుందా చెక్ చేయండి.';
+        } finally {
+          $('btnWeather').disabled = false;
+        }
+      }
+
+      async function handleAdRequest() {
+        $('btnAdRequest').disabled = true;
+        $('adRequestStatus').textContent = 'పంపుతున్నారు...';
+        $('adRequestResult').innerHTML = '';
+        try {
+          const body = {
+            brandName: $('adBrandName').value || undefined,
+            contactName: $('adContactName').value || undefined,
+            phone: $('adPhone').value || undefined,
+            district: $('adDistrict').value || undefined,
+            productTitleTe: $('adTitleTe').value || undefined,
+            descriptionTe: $('adDescriptionTe').value || undefined,
+            ctaUrl: $('adCtaUrl').value || undefined,
+            budget: $('adBudget').value || undefined,
+            notes: $('adNotes').value || undefined
+          };
+
+          const data = await fetchJson(API_BASE + '/api/ads/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          $('adRequestStatus').textContent = 'సక్సెస్.';
+          $('adRequestResult').innerHTML = `
+            <div style="background:#ecfeff;border:1px solid #bae6fd;border-radius:8px;padding:8px 9px;">
+              ${data.messageTe || 'అభ్యర్థన నమోదు అయింది.'}<br/>
+              <span class="muted">రిక్వెస్ట్ ID: ${data.request?.id || '-'}</span>
+            </div>
+          `;
+        } catch (err) {
+          console.error(err);
+          $('adRequestStatus').textContent = 'విఫలమైంది. బ్యాకెండ్ నడుస్తుందా చెక్ చేయండి.';
+        } finally {
+          $('btnAdRequest').disabled = false;
+        }
+      }
+
+      function formatTime(iso) {
+        try {
+          const d = new Date(iso);
+          if (Number.isNaN(d.getTime())) return '';
+          return d.toLocaleString();
+        } catch {
+          return '';
+        }
+      }
+
+      function renderDiscussionPosts(posts) {
+        const container = $('discussList');
+        if (!container) return;
+        if (!posts || !posts.length) {
+          container.innerHTML = '<p class="muted">ఇప్పటివరకు పోస్ట్‌లు లేవు. మొదట మీరు పోస్ట్ చేయండి.</p>';
+          return;
+        }
+
+        container.innerHTML = posts
+          .map((p) => {
+            const locParts = [
+              p.location?.district,
+              p.location?.mandal,
+              p.location?.village
+            ].filter(Boolean);
+            const locText = locParts.length ? locParts.join(' / ') : null;
+            const title = p.titleTe ? escapeHtml(p.titleTe) : 'సమస్య';
+            const problem = escapeHtml(p.problemTe || '');
+            const by = p.name ? escapeHtml(p.name) : 'రైతు';
+            const time = p.createdAt ? escapeHtml(formatTime(p.createdAt)) : '';
+
+            return `
+              <div class="recommend-item" style="background:#fff;border:1px solid #e5e7eb;">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                  <div>
+                    <div><strong>${title}</strong></div>
+                    <div class="muted">${by}${locText ? ' · ' + escapeHtml(locText) : ''}${
+              time ? ' · ' + time : ''
+            }</div>
+                  </div>
+                  <div class="tag">స్పందనలు: ${p.commentCount || 0}</div>
+                </div>
+                <div style="margin-top:6px;">${problem}</div>
+
+                <details style="margin-top:8px;">
+                  <summary style="cursor:pointer; user-select:none;">సమాధానాలు చూడండి / ఇవ్వండి</summary>
+                  <div style="margin-top:8px;">
+                    <div class="field">
+                      <label>మీ పేరు</label>
+                      <input id="replyName-${p.id}" placeholder="పేరు" />
+                    </div>
+                    <div class="field">
+                      <label>సమాధానం *</label>
+                      <input id="replyText-${p.id}" placeholder="మీ సూచన..." />
+                    </div>
+                    <div class="button-row">
+                      <button type="button" class="secondary" onclick="submitReply('${p.id}')">సమాధానం పంపండి</button>
+                      <button type="button" onclick="loadComments('${p.id}')">రిఫ్రెష్</button>
+                    </div>
+                    <div class="status" id="replyStatus-${p.id}"></div>
+                    <div class="result-block" id="comments-${p.id}">
+                      <p class="muted">సమాధానాలు లోడ్ కాలేదు.</p>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      async function loadDiscussions() {
+        $('discussStatus').textContent = 'లోడ్ అవుతోంది...';
+        try {
+          const data = await fetchJson(API_BASE + '/api/discussions?limit=20');
+          renderDiscussionPosts(data.posts || []);
+          $('discussStatus').textContent = 'సిద్ధం.';
+        } catch (err) {
+          console.error(err);
+          $('discussStatus').textContent = 'లోడ్ కాలేదు. బ్యాకెండ్ నడుస్తుందా చెక్ చేయండి.';
+        }
+      }
+
+      async function handleDiscussPost() {
+        $('btnDiscussPost').disabled = true;
+        $('discussStatus').textContent = 'పోస్ట్ చేస్తున్నారు...';
+        try {
+          const body = {
+            name: $('discussName').value || undefined,
+            phone: $('discussPhone').value || undefined,
+            titleTe: $('discussTitleTe').value || undefined,
+            problemTe: $('discussProblemTe').value || undefined,
+            district: $('district').value || undefined,
+            mandal: $('mandal').value || undefined,
+            village: $('village').value || undefined
+          };
+          const data = await fetchJson(API_BASE + '/api/discussions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          $('discussProblemTe').value = '';
+          $('discussTitleTe').value = '';
+          $('discussStatus').textContent = data.messageTe || 'పోస్ట్ అయింది.';
+          await loadDiscussions();
+        } catch (err) {
+          console.error(err);
+          $('discussStatus').textContent =
+            'పోస్ట్ కాలేదు. “మీ సమస్య వివరించండి” తప్పనిసరి. బ్యాకెండ్ నడుస్తుందా చూడండి.';
+        } finally {
+          $('btnDiscussPost').disabled = false;
+        }
+      }
+
+      async function loadComments(postId) {
+        const container = document.getElementById(`comments-${postId}`);
+        const status = document.getElementById(`replyStatus-${postId}`);
+        if (!container) return;
+        if (status) status.textContent = 'సమాధానాలు లోడ్ అవుతున్నాయి...';
+        try {
+          const data = await fetchJson(`${API_BASE}/api/discussions/${postId}/comments`);
+          const comments = data.comments || [];
+          if (!comments.length) {
+            container.innerHTML = '<p class="muted">ఇంకా సమాధానాలు లేవు.</p>';
+          } else {
+            container.innerHTML = comments
+              .map((c) => {
+                const by = c.name ? escapeHtml(c.name) : 'రైతు';
+                const time = c.createdAt ? escapeHtml(formatTime(c.createdAt)) : '';
+                return `<div style="padding:6px 0;border-bottom:1px solid #e5e7eb;">
+                  <div><strong>${by}</strong> <span class="muted">${time}</span></div>
+                  <div>${escapeHtml(c.replyTe || '')}</div>
+                </div>`;
+              })
+              .join('');
+          }
+          if (status) status.textContent = 'సమాధానాలు సిద్ధం.';
+        } catch (err) {
+          console.error(err);
+          if (status) status.textContent = 'సమాధానాలు లోడ్ కాలేదు.';
+        }
+      }
+
+      async function submitReply(postId) {
+        const nameEl = document.getElementById(`replyName-${postId}`);
+        const replyEl = document.getElementById(`replyText-${postId}`);
+        const status = document.getElementById(`replyStatus-${postId}`);
+        const name = nameEl?.value || undefined;
+        const replyTe = replyEl?.value || undefined;
+        if (status) status.textContent = 'పంపుతున్నారు...';
+        try {
+          const data = await fetchJson(`${API_BASE}/api/discussions/${postId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, replyTe })
+          });
+          if (replyEl) replyEl.value = '';
+          if (status) status.textContent = data.messageTe || 'పంపబడింది.';
+          await loadComments(postId);
+          await loadDiscussions();
+        } catch (err) {
+          console.error(err);
+          if (status) status.textContent = 'సమాధానం పంపలేకపోయాం. “సమాధానం” తప్పనిసరి.';
+        }
+      }
+
+      // Expose for inline onclick
+      window.loadComments = loadComments;
+      window.submitReply = submitReply;
+
+      function handleUseLocation() {
+        if (!navigator.geolocation) {
+          $('geoStatus').textContent = 'ఈ బ్రౌజర్‌లో ఆటో లొకేషన్ అందుబాటులో లేదు.';
+          return;
+        }
+        $('geoStatus').textContent = 'స్థానం పొందుతున్నారు...';
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            $('lat').value = latitude.toFixed(6);
+            $('lon').value = longitude.toFixed(6);
+            $('geoStatus').textContent = 'స్థానం సెట్ అయింది.';
+          },
+          (err) => {
+            console.error(err);
+            $('geoStatus').textContent = 'స్థానం తీసుకోలేకపోయాం.';
+          }
+        );
+      }
+
+      // Wire events
+      $('btnRecommend').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleRecommend();
+      });
+      $('btnDroneBook').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleDroneBook();
+      });
+      $('btnWeather').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleWeather();
+      });
+      $('btnUseLocation').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleUseLocation();
+      });
+      $('btnAdRequest').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleAdRequest();
+      });
+      $('btnDiscussPost').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleDiscussPost();
+      });
+      $('btnDiscussRefresh').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadDiscussions();
+      });
+
+      // Map initialisation
+      let map;
+      let marker;
+      function initMap() {
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
+        if (typeof window.L === 'undefined') {
+          mapEl.innerHTML =
+            '<div style="padding:10px;font-size:0.82rem;color:#334155;background:#f8fafc;">' +
+            'మ్యాప్ లోడ్ కాలేదు. మీ ఇంటర్నెట్ కనెక్షన్ ఉందా చూడండి (Leaflet CDN లోడ్ కావాలి).' +
+            '</div>';
+          $('geoStatus').textContent =
+            'మ్యాప్ లొడ్ కాలేదు. అయినా మీరు 🌐 ఆటో లొకేషన్ ద్వారా lat/lon సెట్ చేసుకోవచ్చు.';
+          return;
+        }
+
+        map = L.map('map').setView([16.5, 80.5], 7); // roughly Andhra Pradesh
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        async function reverseGeocodeDirect(lat, lon) {
+          const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+          const res = await fetch(url, {
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          if (!res.ok) throw new Error('reverse geocode failed');
+          const raw = await res.json();
+          const address = raw.address || {};
+          const district =
+            address.county ||
+            address.state_district ||
+            address.city_district ||
+            address.city ||
+            address.state ||
+            null;
+          const mandal = address.suburb || address.village || address.town || null;
+          const village = address.village || address.hamlet || address.suburb || null;
+          return {
+            raw,
+            district,
+            mandal,
+            village,
+            displayName: raw.display_name
+          };
+        }
+
+        function setPoint(lat, lon) {
+          if (marker) {
+            marker.setLatLng([lat, lon]);
+          } else {
+            marker = L.marker([lat, lon]).addTo(map);
+          }
+          marker.bindPopup('ఎంచుకున్న స్థానం').openPopup();
+          $('lat').value = lat.toFixed(6);
+          $('lon').value = lon.toFixed(6);
+          $('geoStatus').textContent = 'మ్యాప్ నుండి స్థానం సెట్ అయింది. జిల్లా వివరాలు తీసుకుంటున్నాం...';
+
+          // Prefer backend reverse geocode (also standardizes fields). If backend is down, fall back to direct OSM call.
+          fetchJson(`${API_BASE}/api/location/reverse?lat=${lat}&lon=${lon}`)
+            .catch(async () => reverseGeocodeDirect(lat, lon))
+            .then((data) => {
+              if (!data) return;
+              if (data.district && !$('district').value) $('district').value = data.district;
+              if (data.mandal && !$('mandal').value) $('mandal').value = data.mandal;
+              if (data.village && !$('village').value) $('village').value = data.village;
+              $('geoStatus').textContent =
+                (data.displayName || 'స్థానం సెట్ అయింది.') +
+                ' (జిల్లా, మండలం, గ్రామం ఆటో ఫిల్ అయ్యాయి).';
+            })
+            .catch((err) => {
+              console.error(err);
+              $('geoStatus').textContent =
+                'స్థానం సెట్ అయింది, కానీ జిల్లా/మండలం వివరాలు తీసుకోలేకపోయాం. ఇంటర్నెట్/సర్వర్ చెక్ చేయండి.';
+            });
+        }
+
+        map.on('click', (e) => {
+          const { lat, lng } = e.latlng;
+          setPoint(lat, lng);
+        });
+
+        // If current location already available, center map there
+        if ($('lat').value && $('lon').value) {
+          const lat = Number($('lat').value);
+          const lon = Number($('lon').value);
+          map.setView([lat, lon], 13);
+          setPoint(lat, lon);
+        }
+      }
+
+      // Initial loads
+      loadAds();
+      loadContent();
+      loadDiscussions();
+      window.addEventListener('load', initMap);
+    </script>
+  </body>
+  </html>
+
