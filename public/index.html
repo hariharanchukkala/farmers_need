@@ -354,6 +354,69 @@
             <div class="status" id="droneStatus"></div>
             <div class="result-block" id="droneResult"></div>
           </div>
+          <div class="card">
+            <h2>కూలీల అభ్యర్థన</h2>
+            <p class="muted">
+              పని కోసం కూలీలు కావాలా? వివరాలు ఇస్తే అందుబాటులో ఉన్న కూలీలకు సమాచారం పంపుతాం.
+            </p>
+            <div class="field">
+              <label>రైతు పేరు</label>
+              <input id="workerFarmerName" placeholder="పేరు" />
+            </div>
+            <div class="field">
+              <label>ఫోన్ నంబర్ *</label>
+              <input id="workerPhone" placeholder="10 అంకెల మొబైల్ నంబర్" />
+            </div>
+            <div class="field">
+              <label>పని రకం *</label>
+              <select id="workerWorkType">
+                <option value="">పని రకం ఎంచుకోండి</option>
+                <option value="నాట్లు నాటడం">నాట్లు నాటడం (Transplanting)</option>
+                <option value="కోత">కోత (Harvesting)</option>
+                <option value="నేల దున్నడం">నేల దున్నడం (Ploughing)</option>
+                <option value="కలుపు తీయడం">కలుపు తీయడం (Weeding)</option>
+                <option value="ఎరువులు వేయడం">ఎరువులు వేయడం (Fertilizing)</option>
+                <option value="పంట మోయడం">పంట మోయడం (Carrying)</option>
+                <option value="విత్తనాలు చల్లడం">విత్తనాలు చల్లడం (Sowing)</option>
+                <option value="ఇతర">ఇతర (Other)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>కావలసిన కూలీల సంఖ్య</label>
+              <input id="workerCount" type="number" min="1" value="2" placeholder="ఉదా: 5" />
+            </div>
+            <div class="field">
+              <label>భూమి విస్తీర్ణం (ఎకరాలు, ఐచ్చికం)</label>
+              <input id="workerLandSize" type="number" min="0.1" step="0.1" placeholder="ఉదా: 2" />
+            </div>
+            <div class="field">
+              <label>పని తేదీ</label>
+              <input id="workerDate" type="date" />
+            </div>
+            <div class="field">
+              <label>జిల్లా</label>
+              <input id="workerDistrict" placeholder="ఉదా: గుంటూరు" />
+            </div>
+            <div class="field">
+              <label>మండలం</label>
+              <input id="workerMandal" placeholder="ఉదా: తెనాలి" />
+            </div>
+            <div class="field">
+              <label>గ్రామం</label>
+              <input id="workerVillage" placeholder="గ్రామం పేరు" />
+            </div>
+            <div class="field">
+              <label>అదనపు వివరాలు (ఐచ్చికం)</label>
+              <input id="workerNotes" placeholder="ఏదైనా ప్రత్యేక అవసరాలు..." />
+            </div>
+            <div class="button-row">
+              <button id="btnWorkerRequest">కూలీలు కావాలి</button>
+              <button id="btnWorkerRefresh" type="button" class="secondary">అభ్యర్థనలు చూడండి</button>
+            </div>
+            <div class="status" id="workerStatus"></div>
+            <div class="result-block" id="workerResult"></div>
+            <div class="result-block" id="workerList"></div>
+          </div>
         </section>
 
         <!-- RIGHT: Ads, content & raw JSON -->
@@ -460,7 +523,7 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
-      const API_BASE = 'http://localhost:4000';
+      const API_BASE = '';
 
       const $ = (id) => document.getElementById(id);
 
@@ -963,6 +1026,102 @@
       window.loadComments = loadComments;
       window.submitReply = submitReply;
 
+      async function handleWorkerRequest() {
+        $('btnWorkerRequest').disabled = true;
+        $('workerStatus').textContent = 'అభ్యర్థన పంపుతున్నారు...';
+        $('workerResult').innerHTML = '';
+        try {
+          const workType = $('workerWorkType').value;
+          if (!workType) {
+            $('workerStatus').textContent = 'పని రకం ఎంచుకోండి.';
+            return;
+          }
+          const phone = $('workerPhone').value;
+          if (!phone) {
+            $('workerStatus').textContent = 'ఫోన్ నంబర్ అవసరం.';
+            return;
+          }
+          const body = {
+            farmerName: $('workerFarmerName').value || undefined,
+            phone,
+            workType,
+            workersNeeded: Number($('workerCount').value) || 2,
+            landSizeAcres: $('workerLandSize').value ? Number($('workerLandSize').value) : undefined,
+            preferredDate: $('workerDate').value || undefined,
+            district: $('workerDistrict').value || $('district').value || undefined,
+            mandal: $('workerMandal').value || $('mandal').value || undefined,
+            village: $('workerVillage').value || $('village').value || undefined,
+            notes: $('workerNotes').value || undefined
+          };
+
+          const data = await fetchJson(API_BASE + '/api/workers/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          $('workerStatus').textContent = 'నమోదు అయింది.';
+          $('workerResult').innerHTML = `
+            <div style="background:#ecfdf5;border:1px solid #bbf7d0;border-radius:8px;padding:8px 9px;">
+              ${escapeHtml(data.messageTe || 'అభ్యర్థన నమోదు అయింది.')}<br/>
+              <span class="muted">అభ్యర్థన ID: ${escapeHtml(data.request?.id || '-')}</span>
+            </div>
+          `;
+          $('workerPhone').value = '';
+          $('workerWorkType').value = '';
+          $('workerNotes').value = '';
+          await loadWorkerRequests();
+        } catch (err) {
+          console.error(err);
+          $('workerStatus').textContent = 'విఫలమైంది. ఫోన్ నంబర్ మరియు పని రకం తప్పనిసరి.';
+        } finally {
+          $('btnWorkerRequest').disabled = false;
+        }
+      }
+
+      async function loadWorkerRequests() {
+        $('workerStatus').textContent = 'అభ్యర్థనలు లోడ్ అవుతున్నాయి...';
+        try {
+          const data = await fetchJson(API_BASE + '/api/workers/requests?limit=20');
+          const requests = data.requests || [];
+          const container = $('workerList');
+          if (!requests.length) {
+            container.innerHTML = '<p class="muted">ఇంకా అభ్యర్థనలు లేవు.</p>';
+          } else {
+            container.innerHTML = '<h3 style="margin:10px 0 6px;">తాజా కూలీల అభ్యర్థనలు</h3>' +
+              requests.map((r) => {
+                const locParts = [r.location?.district, r.location?.mandal, r.location?.village].filter(Boolean);
+                const locText = locParts.length ? locParts.join(' / ') : '';
+                const time = r.createdAt ? escapeHtml(formatTime(r.createdAt)) : '';
+                return `
+                  <div class="recommend-item">
+                    <div><strong>${escapeHtml(r.workType)}</strong>
+                      <span class="pill" style="margin-left:6px;">${r.workersNeeded} మంది</span>
+                    </div>
+                    <div class="muted">
+                      ${r.farmerName ? escapeHtml(r.farmerName) + ' · ' : ''}
+                      ${locText ? escapeHtml(locText) + ' · ' : ''}
+                      ${r.preferredDate ? 'తేదీ: ' + escapeHtml(r.preferredDate) + ' · ' : ''}
+                      ${time}
+                    </div>
+                    ${r.landSizeAcres ? `<div class="muted">భూమి: ${r.landSizeAcres} ఎకరాలు</div>` : ''}
+                    ${r.notes ? `<div style="margin-top:3px;">${escapeHtml(r.notes)}</div>` : ''}
+                    <div style="margin-top:4px;">
+                      <span class="tag">ID: ${escapeHtml(r.id)}</span>
+                      <span class="tag" style="background:#fef9c3;border-color:#fde68a;color:#92400e;">
+                        ${r.status === 'open' ? 'తెరచి ఉంది' : escapeHtml(r.status)}
+                      </span>
+                    </div>
+                  </div>`;
+              }).join('');
+          }
+          $('workerStatus').textContent = 'సిద్ధం.';
+        } catch (err) {
+          console.error(err);
+          $('workerStatus').textContent = 'అభ్యర్థనలు లోడ్ కాలేదు.';
+        }
+      }
+
       function handleUseLocation() {
         if (!navigator.geolocation) {
           $('geoStatus').textContent = 'ఈ బ్రౌజర్‌లో ఆటో లొకేషన్ అందుబాటులో లేదు.';
@@ -1011,6 +1170,14 @@
       $('btnDiscussRefresh').addEventListener('click', (e) => {
         e.preventDefault();
         loadDiscussions();
+      });
+      $('btnWorkerRequest').addEventListener('click', (e) => {
+        e.preventDefault();
+        handleWorkerRequest();
+      });
+      $('btnWorkerRefresh').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadWorkerRequests();
       });
 
       // Map initialisation
